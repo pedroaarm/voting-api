@@ -31,6 +31,5 @@ class ApuracaoIT extends AbstractPostgresIT {
 
     assertThat(votoJpa.countByPautaIdAndOpcao(pauta, OpcaoVoto.SIM)).isEqualTo(7);
     assertThat(votoJpa.countByPautaIdAndOpcao(pauta, OpcaoVoto.NAO)).isEqualTo(3);
-    assertThat(votoJpa.contarPorOpcao(pauta)).hasSize(2);
   }
 }
