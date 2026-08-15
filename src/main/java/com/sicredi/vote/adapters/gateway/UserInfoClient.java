@@ -4,6 +4,7 @@ import com.sicredi.vote.adapters.gateway.dto.UserInfoResponse;
 import com.sicredi.vote.application.exception.ElegibilidadeIndisponivelException;
 import com.sicredi.vote.application.port.out.Elegibilidade;
 import com.sicredi.vote.application.port.out.VerificadorElegibilidade;
+import com.sicredi.vote.config.CacheConfig;
 import com.sicredi.vote.config.ElegibilidadeProperties;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
@@ -14,6 +15,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -42,6 +44,7 @@ public class UserInfoClient implements VerificadorElegibilidade {
   }
 
   @Override
+  @Cacheable(cacheNames = CacheConfig.CACHE_ELEGIBILIDADE, key = "#cpf")
   public Elegibilidade verificar(String cpf) {
     Supplier<Elegibilidade> chamada = () -> chamar(cpf);
     Supplier<Elegibilidade> resiliente =
