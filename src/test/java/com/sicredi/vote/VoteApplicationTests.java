@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 class VoteApplicationTests extends AbstractPostgresIT {
 
-    @Test
-    void contextLoads() {
-    }
+  @Test
+  void contextLoads() {}
 }

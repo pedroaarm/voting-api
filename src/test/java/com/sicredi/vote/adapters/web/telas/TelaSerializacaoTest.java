@@ -1,38 +1,64 @@
 package com.sicredi.vote.adapters.web.telas;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sicredi.vote.adapters.web.telas.model.*;
-import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class TelaSerializacaoTest {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+  private final ObjectMapper mapper = new ObjectMapper();
 
-    @Test
-    void formularioSerializaSemCamposNulos() throws Exception {
-        var tela = TelaFormulario.builder()
-            .tipo("FORMULARIO").titulo("T")
-            .itens(List.of(ItemFormulario.builder().tipo("INPUT_TEXTO").id("cpf").titulo("CPF").valor("").build()))
-            .botaoOk(Botao.builder().texto("Sim").url("http://x/votos").body(Map.of("opcao", "SIM")).build())
+  @Test
+  void formularioSerializaSemCamposNulos() throws Exception {
+    var tela =
+        TelaFormulario.builder()
+            .tipo("FORMULARIO")
+            .titulo("T")
+            .itens(
+                List.of(
+                    ItemFormulario.builder()
+                        .tipo("INPUT_TEXTO")
+                        .id("cpf")
+                        .titulo("CPF")
+                        .valor("")
+                        .build()))
+            .botaoOk(
+                Botao.builder()
+                    .texto("Sim")
+                    .url("http://x/votos")
+                    .body(Map.of("opcao", "SIM"))
+                    .build())
             .build();
-        String json = mapper.writeValueAsString(tela);
-        assertThat(json).contains("\"tipo\":\"FORMULARIO\"").contains("\"botaoOk\"");
-        assertThat(json).doesNotContain("botaoCancelar"); // nulo omitido
-        assertThat(json).doesNotContain("\"texto\":null");
-    }
+    String json = mapper.writeValueAsString(tela);
+    assertThat(json).contains("\"tipo\":\"FORMULARIO\"").contains("\"botaoOk\"");
+    assertThat(json).doesNotContain("botaoCancelar"); // nulo omitido
+    assertThat(json).doesNotContain("\"texto\":null");
+  }
 
-    @Test
-    void selecaoSerializaItensComUrlEBody() throws Exception {
-        var tela = TelaSelecao.builder().tipo("SELECAO").titulo("Voto")
-            .itens(List.of(
-                ItemSelecao.builder().texto("Sim").url("http://x/votos").body(Map.of("opcao","SIM")).build(),
-                ItemSelecao.builder().texto("Nao").url("http://x/votos").body(Map.of("opcao","NAO")).build()))
+  @Test
+  void selecaoSerializaItensComUrlEBody() throws Exception {
+    var tela =
+        TelaSelecao.builder()
+            .tipo("SELECAO")
+            .titulo("Voto")
+            .itens(
+                List.of(
+                    ItemSelecao.builder()
+                        .texto("Sim")
+                        .url("http://x/votos")
+                        .body(Map.of("opcao", "SIM"))
+                        .build(),
+                    ItemSelecao.builder()
+                        .texto("Nao")
+                        .url("http://x/votos")
+                        .body(Map.of("opcao", "NAO"))
+                        .build()))
             .build();
-        String json = mapper.writeValueAsString(tela);
-        assertThat(json).contains("\"tipo\":\"SELECAO\"").contains("\"opcao\":\"SIM\"");
-    }
+    String json = mapper.writeValueAsString(tela);
+    assertThat(json).contains("\"tipo\":\"SELECAO\"").contains("\"opcao\":\"SIM\"");
+  }
 }

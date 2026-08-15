@@ -5,7 +5,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface SessaoRepository {
-    Sessao salvar(Sessao sessao);
-    Optional<Sessao> buscarPorPauta(UUID pautaId);
-    boolean existePorPauta(UUID pautaId);
+  Sessao salvar(Sessao sessao);
+
+  Optional<Sessao> buscarPorPauta(UUID pautaId);
+
+  boolean existePorPauta(UUID pautaId);
 }
