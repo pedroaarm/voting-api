@@ -6,10 +6,12 @@ rule_files:
   - /etc/prometheus/alerts.yml
 
 scrape_configs:
+  # Alvo: a aplicacao rodando no HOST via `./gradlew bootRun` (nao dentro do compose).
+  # host.docker.internal resolve o host a partir do container (Docker Desktop no macOS/Windows).
   - job_name: vote-api
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
-          - app:8080
+          - host.docker.internal:8080
         labels:
           application: vote-api

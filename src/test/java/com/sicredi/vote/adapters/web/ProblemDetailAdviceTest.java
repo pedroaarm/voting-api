@@ -1,5 +1,6 @@
 package com.sicredi.vote.adapters.web;
 
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -33,10 +34,22 @@ class ProblemDetailAdviceTest {
   }
 
   @Test
+  void votoDuplicadoContaComoRecusa() throws Exception {
+    mvc.perform(get("/sonda/dup")).andExpect(status().isConflict());
+    verify(metrics).votoRecusado("duplicado");
+  }
+
+  @Test
   void sessaoFechadaVira422() throws Exception {
     mvc.perform(get("/sonda/fechada"))
         .andExpect(status().isUnprocessableEntity())
         .andExpect(jsonPath("$.type").value("urn:vote:sessao-fechada"));
+  }
+
+  @Test
+  void sessaoFechadaContaComoRecusa() throws Exception {
+    mvc.perform(get("/sonda/fechada")).andExpect(status().isUnprocessableEntity());
+    verify(metrics).votoRecusado("sessao_fechada");
   }
 
   @Test

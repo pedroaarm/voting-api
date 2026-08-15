@@ -92,14 +92,14 @@ class UserInfoClientWireMockTest {
   void falhas5xxAbremOCircuitoEFailClosed() {
     wm.stubFor(get(urlPathMatching("/users/.*")).willReturn(aResponse().withStatus(500)));
     var c = client();
-    // dispara chamadas suficientes para encher a janela e abrir o circuito
+
     for (int i = 0; i < 6; i++) {
       assertThatThrownBy(() -> c.verificar("5" + Math.random()))
           .isInstanceOf(ElegibilidadeIndisponivelException.class);
     }
     assertThat(cbRegistry.circuitBreaker("userInfo").getState())
         .isIn(CircuitBreaker.State.OPEN, CircuitBreaker.State.FORCED_OPEN);
-    // com o circuito aberto, ainda é indisponivel (fail-closed), sem tocar o WireMock
+
     assertThatThrownBy(() -> c.verificar("depois"))
         .isInstanceOf(ElegibilidadeIndisponivelException.class);
   }

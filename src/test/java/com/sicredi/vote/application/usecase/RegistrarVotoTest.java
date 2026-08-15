@@ -37,7 +37,7 @@ class RegistrarVotoTest {
 
   @Test
   void rejeitaQuandoSessaoFechada() {
-    sessoes.salvar(Sessao.abrir(pauta, agora.minus(Duration.ofMinutes(5)), 1)); // já fechou
+    sessoes.salvar(Sessao.abrir(pauta, agora.minus(Duration.ofMinutes(5)), 1));
     assertThatThrownBy(() -> useCase.executar(pauta, "assoc-1", "cpf", OpcaoVoto.SIM))
         .isInstanceOf(SessaoFechadaException.class);
   }

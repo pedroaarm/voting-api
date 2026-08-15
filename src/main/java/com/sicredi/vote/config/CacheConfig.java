@@ -22,14 +22,13 @@ import org.springframework.data.redis.serializer.RedisSerializationContext.Seria
 @EnableCaching
 public class CacheConfig {
 
-  /** Elegibilidade por CPF (chamada externa). TTL curto: o status pode mudar. */
   public static final String CACHE_ELEGIBILIDADE = "elegibilidade";
 
-  /** Pauta por id. Pautas sao imutaveis apos criadas -> TTL longo. */
   public static final String CACHE_PAUTA = "pauta";
 
-  /** Lista de pautas. Invalidada a cada nova pauta (@CacheEvict no salvar). */
   public static final String CACHE_PAUTAS_LISTA = "pautasLista";
+
+  public static final String CACHE_RESULTADO = "resultado";
 
   @Bean
   RedisCacheManagerBuilderCustomizer cacheCustomizer() {
@@ -40,7 +39,8 @@ public class CacheConfig {
         builder
             .withCacheConfiguration(CACHE_ELEGIBILIDADE, config(Duration.ofMinutes(5), json))
             .withCacheConfiguration(CACHE_PAUTA, config(Duration.ofHours(1), json))
-            .withCacheConfiguration(CACHE_PAUTAS_LISTA, config(Duration.ofMinutes(10), json));
+            .withCacheConfiguration(CACHE_PAUTAS_LISTA, config(Duration.ofMinutes(10), json))
+            .withCacheConfiguration(CACHE_RESULTADO, config(Duration.ofHours(1), json));
   }
 
   private RedisCacheConfiguration config(Duration ttl, SerializationPair<Object> values) {
@@ -50,12 +50,6 @@ public class CacheConfig {
         .serializeValuesWith(values);
   }
 
-  /**
-   * ObjectMapper dedicado ao cache. Guarda o tipo concreto (@class) para round-trip de enums e dos
-   * modelos de dominio, que sao imutaveis (campos final + @Builder do Lombok, sem construtor
-   * publico). ParameterNamesModule + visibilidade de creator permitem desserializar pelo construtor
-   * gerado, mantendo o dominio livre de anotacoes de framework.
-   */
   private ObjectMapper cacheObjectMapper() {
     PolymorphicTypeValidator ptv =
         BasicPolymorphicTypeValidator.builder().allowIfSubType(Object.class).build();
@@ -72,7 +66,9 @@ public class CacheConfig {
             .getSerializationConfig()
             .getDefaultVisibilityChecker()
             .withCreatorVisibility(JsonAutoDetect.Visibility.ANY)
-            .withFieldVisibility(JsonAutoDetect.Visibility.ANY));
+            .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+            .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+            .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE));
     return mapper;
   }
 }
