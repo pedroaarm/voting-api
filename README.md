@@ -14,10 +14,13 @@ Resilience4j · springdoc-openapi · Micrometer/Actuator · Arquitetura Limpa.
 
 Três modos (nenhum exige passo manual de banco):
 
-**a) Docker Compose (app + Postgres, um comando)** — production-like:
+**a) Docker Compose (app + Postgres + Prometheus + Grafana, um comando)** — production-like local:
 ```bash
 docker compose -f docker-compose.app.yml up --build
-# app publicada em http://localhost:8090   (Swagger: http://localhost:8090/swagger-ui.html)
+# API:        http://localhost:8090
+# Swagger:    http://localhost:8090/swagger-ui.html
+# Prometheus: http://localhost:9090
+# Grafana:    http://localhost:3000  (admin/admin)
 ```
 > A porta host **8090** foi escolhida para evitar o conflito comum na 8080. Para usar outra,
 > edite `ports: ["8090:8080"]` em `docker-compose.app.yml`. Encerrar: `docker compose -f docker-compose.app.yml down`.
@@ -221,8 +224,16 @@ número não foi medido** — rode o script no seu ambiente para obtê-lo. A esc
 - **Actuator:** `/actuator/health`, `/actuator/prometheus`, `/actuator/metrics`.
 - **Métricas de negócio:** `vote.registrados` (votos aceitos) e `vote.recusados{motivo}`
   (`inelegivel` / `indisponivel`).
+- **Prometheus local:** `http://localhost:9090`, com job `vote-api` coletando
+  `http://app:8080/actuator/prometheus` dentro da rede Docker.
+- **Grafana local:** `http://localhost:3000`, login `admin` / `admin`, com datasource Prometheus
+  e dashboard `Vote API` provisionados automaticamente.
 - **Correlation-id:** cabeçalho `X-Correlation-Id` (gerado se ausente) propagado no log via MDC
   (`%X{correlationId}`). Exceções de elegibilidade **não** têm a causa logada (evita CPF em log).
+
+O dashboard inicial mostra votos registrados, votos recusados por motivo, requisições HTTP,
+latência HTTP, memória/threads JVM e uptime do processo. As métricas brutas podem ser verificadas
+em `http://localhost:8090/actuator/prometheus`.
 
 ---
 

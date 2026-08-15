@@ -6,9 +6,11 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class ProblemDetailAdvice {
@@ -95,16 +97,13 @@ public class ProblemDetailAdvice {
     return pd;
   }
 
-  @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
-  ProblemDetail handleUnreadable(
-      org.springframework.http.converter.HttpMessageNotReadableException e) {
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  ProblemDetail handleUnreadable(HttpMessageNotReadableException e) {
     return validacaoProblem(HttpStatus.BAD_REQUEST);
   }
 
-  @ExceptionHandler(
-      org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
-  ProblemDetail handleTypeMismatch(
-      org.springframework.web.method.annotation.MethodArgumentTypeMismatchException e) {
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException e) {
     return validacaoProblem(HttpStatus.BAD_REQUEST);
   }
 }
