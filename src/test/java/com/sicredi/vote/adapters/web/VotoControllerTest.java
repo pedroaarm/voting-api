@@ -81,7 +81,7 @@ class VotoControllerTest {
   void elegibilidadeIndisponivelRetorna503() throws Exception {
     UUID pauta = UUID.randomUUID();
     when(registrarVoto.executar(any(), any(), any(), any()))
-        .thenThrow(new ElegibilidadeIndisponivelException("fora"));
+        .thenThrow(new ElegibilidadeIndisponivelException());
     mvc.perform(
             post("/api/v1/pautas/" + pauta + "/votos")
                 .contentType(MediaType.APPLICATION_JSON)

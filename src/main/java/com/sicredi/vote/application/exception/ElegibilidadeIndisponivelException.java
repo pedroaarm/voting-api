@@ -1,11 +1,11 @@
 package com.sicredi.vote.application.exception;
 
-public class ElegibilidadeIndisponivelException extends RuntimeException {
-  public ElegibilidadeIndisponivelException(String msg, Throwable causa) {
-    super(msg, causa);
+public class ElegibilidadeIndisponivelException extends AplicacaoException {
+  public ElegibilidadeIndisponivelException() {
+    super(TipoProblema.ELEGIBILIDADE_INDISPONIVEL);
   }
 
-  public ElegibilidadeIndisponivelException(String msg) {
-    super(msg);
+  public ElegibilidadeIndisponivelException(Throwable causa) {
+    super(TipoProblema.ELEGIBILIDADE_INDISPONIVEL, causa);
   }
 }
