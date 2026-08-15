@@ -1,0 +1,71 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.1.0'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
+    id 'info.solidsoft.pitest' version '1.19.0'
+}
+
+group = 'com.sicredi'
+version = '0.0.1-SNAPSHOT'
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+
+configurations { compileOnly { extendsFrom annotationProcessor } }
+
+repositories { mavenCentral() }
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0'
+
+    implementation 'org.springframework.boot:spring-boot-flyway'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
+    implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
+
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.h2database:h2'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
+    testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.5.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') { useJUnitPlatform() }
+
+jacoco { toolVersion = "0.8.12" }
+
+test { finalizedBy jacocoTestReport }
+jacocoTestReport { dependsOn test; reports { xml.required = true; html.required = true } }
+
+pitest {
+    targetClasses = ['com.sicredi.vote.domain.*']
+    targetTests   = ['com.sicredi.vote.domain.*']
+    junit5PluginVersion = '1.2.1'
+    threads = 4
+    outputFormats = ['HTML']
+    timestampedReports = false
+    // The plugin's auto-injected junit-platform-launcher (resolved from a detached, unmanaged
+    // configuration) picks an old 1.14.4 release that conflicts with junit-jupiter 6.0.3 (Boot
+    // 4.1's managed JUnit version), breaking `test` with NoSuchMethodError. We already declare
+    // `testRuntimeOnly 'org.junit.platform:junit-platform-launcher'` ourselves (Spring Boot's
+    // recommended setup), which resolves correctly to 6.0.3 via the managed junit-bom, so disable
+    // the plugin's own injection.
+    addJUnitPlatformLauncher = false
+}

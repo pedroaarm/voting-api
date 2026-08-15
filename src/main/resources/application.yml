@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: vote-api
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  messages:
+    basename: messages
+    encoding: UTF-8
+
+vote:
+  sessao:
+    duracao-default-minutos: 1
+  callback:
+    base-url: http://localhost:8080
+  elegibilidade:
+    provider: sempre
+    url: https://user-info.herokuapp.com
+    timeout: 2s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userInfo:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        record-exceptions:
+          - com.sicredi.vote.application.exception.ElegibilidadeIndisponivelException
+  retry:
+    instances:
+      userInfo:
+        max-attempts: 3
+        wait-duration: 200ms
+        retry-exceptions:
+          - com.sicredi.vote.application.exception.ElegibilidadeIndisponivelException
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local-h2
+  datasource:
+    url: jdbc:h2:file:./data/vote;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    username: sa
+    password: ""
+  docker:
+    compose:
+      enabled: false
