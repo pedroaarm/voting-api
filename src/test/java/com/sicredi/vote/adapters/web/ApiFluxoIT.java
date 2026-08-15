@@ -42,7 +42,6 @@ class ApiFluxoIT extends AbstractPostgresIT {
   void fluxoCompletoCadastrarAbrirVotarResultado() {
     var rest = client();
 
-    // cadastrar pauta
     var pauta =
         rest.post()
             .uri("/api/v1/pautas")
@@ -53,7 +52,6 @@ class ApiFluxoIT extends AbstractPostgresIT {
     assertThat(pauta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     String pautaId = com.jayway.jsonpath.JsonPath.read(pauta.getBody(), "$.id");
 
-    // abrir sessao (1 min)
     rest.post()
         .uri("/api/v1/pautas/{id}/sessoes", pautaId)
         .contentType(MediaType.APPLICATION_JSON)
@@ -61,7 +59,6 @@ class ApiFluxoIT extends AbstractPostgresIT {
         .retrieve()
         .toBodilessEntity();
 
-    // votar SIM e NAO por associados distintos
     rest.post()
         .uri("/api/v1/pautas/{id}/votos", pautaId)
         .contentType(MediaType.APPLICATION_JSON)
@@ -81,7 +78,6 @@ class ApiFluxoIT extends AbstractPostgresIT {
         .retrieve()
         .toBodilessEntity();
 
-    // resultado antes de fechar -> 409
     var emAndamento =
         rest.get()
             .uri("/api/v1/pautas/{id}/resultado", pautaId)

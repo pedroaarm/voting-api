@@ -38,3 +38,6 @@ out/
 
 ### Docs (nao versionar) ###
 /docs/
+
+### Codex (local, nao versionar) ###
+.codex/

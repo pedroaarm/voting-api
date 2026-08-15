@@ -10,16 +10,27 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
   app:
     build: .
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     environment:
       SPRING_DOCKER_COMPOSE_ENABLED: "false"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/vote
       SPRING_DATASOURCE_USERNAME: vote
       SPRING_DATASOURCE_PASSWORD: vote
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     ports:
       - "8090:8080"
   prometheus:

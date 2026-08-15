@@ -2,6 +2,7 @@ package com.sicredi.vote.adapters.web.telas;
 
 import com.sicredi.vote.adapters.web.telas.model.*;
 import com.sicredi.vote.config.CallbackProperties;
+import com.sicredi.vote.domain.model.Pauta;
 import com.sicredi.vote.domain.model.ResultadoVotacao;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ public class TelaFactory {
         .build();
   }
 
-  public TelaSelecao listaPautas(java.util.List<com.sicredi.vote.domain.model.Pauta> pautas) {
+  public TelaSelecao listaPautas(List<Pauta> pautas) {
     var itens =
         pautas.stream()
             .map(
@@ -64,7 +65,7 @@ public class TelaFactory {
         .build();
   }
 
-  public TelaSelecao acoesPauta(java.util.UUID pautaId) {
+  public TelaSelecao acoesPauta(UUID pautaId) {
     return TelaSelecao.builder()
         .tipo("SELECAO")
         .titulo(msg("tela.pauta.acoes.titulo"))
