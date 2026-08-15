@@ -34,7 +34,7 @@ class ConsultarResultadoTest {
   @Test
   void falhaQuandoSessaoAindaEmAndamento() {
     UUID pauta = pautaSalva();
-    sessoes.salvar(Sessao.abrir(pauta, agora, 1)); // aberta agora
+    sessoes.salvar(Sessao.abrir(pauta, agora, 1));
     assertThatThrownBy(() -> useCase.executar(pauta))
         .isInstanceOf(SessaoEmAndamentoException.class);
   }
@@ -42,7 +42,7 @@ class ConsultarResultadoTest {
   @Test
   void apuraAposFechamento() {
     UUID pauta = pautaSalva();
-    sessoes.salvar(Sessao.abrir(pauta, agora.minus(Duration.ofMinutes(5)), 1)); // já fechou
+    sessoes.salvar(Sessao.abrir(pauta, agora.minus(Duration.ofMinutes(5)), 1));
     votos.salvar(
         Voto.builder()
             .id(UUID.randomUUID())

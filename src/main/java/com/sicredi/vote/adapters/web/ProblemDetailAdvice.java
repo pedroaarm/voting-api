@@ -61,11 +61,13 @@ public class ProblemDetailAdvice {
 
   @ExceptionHandler(VotoDuplicadoException.class)
   ProblemDetail handle(VotoDuplicadoException e) {
+    metrics.votoRecusado("duplicado");
     return problem(HttpStatus.CONFLICT, e);
   }
 
   @ExceptionHandler(SessaoFechadaException.class)
   ProblemDetail handle(SessaoFechadaException e) {
+    metrics.votoRecusado("sessao_fechada");
     return problem(HttpStatus.UNPROCESSABLE_ENTITY, e);
   }
 

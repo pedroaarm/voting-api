@@ -6,10 +6,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
-/**
- * Test-only {@link Clock} whose instant can be advanced on demand, so integration tests can close a
- * time-bounded voting session without sleeping.
- */
 public class AdjustableClock extends Clock {
 
   private Instant instant;

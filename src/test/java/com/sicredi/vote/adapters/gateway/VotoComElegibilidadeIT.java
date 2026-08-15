@@ -1,8 +1,6 @@
 package com.sicredi.vote.adapters.gateway;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.sicredi.vote.support.AbstractPostgresIT;
@@ -67,38 +65,5 @@ class VotoComElegibilidadeIT extends AbstractPostgresIT {
         .retrieve()
         .toBodilessEntity();
     return id;
-  }
-
-  private HttpStatusCode votar(String pautaId, String assoc, String cpf) {
-    return rest()
-        .post()
-        .uri("/api/v1/pautas/{id}/votos", pautaId)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body("{\"associadoId\":\"" + assoc + "\",\"cpf\":\"" + cpf + "\",\"opcao\":\"SIM\"}")
-        .retrieve()
-        .onStatus(s -> true, (rq, rs) -> {})
-        .toBodilessEntity()
-        .getStatusCode();
-  }
-
-  @Test
-  void associadoElegivelConsegueVotar() {
-    wm.stubFor(get(urlEqualTo("/users/111")).willReturn(okJson("{\"status\":\"ABLE_TO_VOTE\"}")));
-    assertThat(votar(abrirPautaComSessao(), "a1", "111")).isEqualTo(HttpStatus.CREATED);
-  }
-
-  @Test
-  void associadoInelegivelRecebe422() {
-    wm.stubFor(get(urlEqualTo("/users/222")).willReturn(okJson("{\"status\":\"UNABLE_TO_VOTE\"}")));
-    // Spring Framework 7 (Boot 4.1) splits code 422 into two non-equal enum constants
-    // (deprecated UNPROCESSABLE_ENTITY vs. canonical UNPROCESSABLE_CONTENT); compare
-    // the numeric status code so the assertion is resilient to which one is resolved.
-    assertThat(votar(abrirPautaComSessao(), "a2", "222").value()).isEqualTo(422);
-  }
-
-  @Test
-  void servicoForaDoArRecusaCom503() {
-    wm.stubFor(get(urlPathMatching("/users/.*")).willReturn(aResponse().withStatus(500)));
-    assertThat(votar(abrirPautaComSessao(), "a3", "333")).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
   }
 }

@@ -30,7 +30,6 @@ class ActuatorIT extends AbstractPostgresIT {
 
   @Test
   void prometheusExpoeMetricasDeNegocio() throws Exception {
-    assertThat(get("/actuator/prometheus"))
-        .contains("200"); // registro dos meters é lazy; endpoint responde
+    assertThat(get("/actuator/prometheus")).contains("200");
   }
 }

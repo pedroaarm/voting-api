@@ -35,7 +35,7 @@ class TelaSerializacaoTest {
             .build();
     String json = mapper.writeValueAsString(tela);
     assertThat(json).contains("\"tipo\":\"FORMULARIO\"").contains("\"botaoOk\"");
-    assertThat(json).doesNotContain("botaoCancelar"); // nulo omitido
+    assertThat(json).doesNotContain("botaoCancelar");
     assertThat(json).doesNotContain("\"texto\":null");
   }
 

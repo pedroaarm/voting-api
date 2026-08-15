@@ -11,3 +11,36 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      # prometheus-host.yml aponta para host.docker.internal:8080 (a app do bootRun, no host)
+      - ./observability/prometheus/prometheus-host.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    extra_hosts:
+      # garante host.docker.internal no Linux (no Docker Desktop macOS/Windows ja existe)
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "9090:9090"
+  grafana:
+    image: grafana/grafana:11.2.0
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+
+volumes:
+  prometheus-data:
+  grafana-data:

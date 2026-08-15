@@ -15,18 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
-/**
- * End-to-end integration test exercising the full REST API over HTTP against a real
- * (Testcontainers) Postgres instance, using an {@link AdjustableClock} to close a time-bounded
- * voting session deterministically, without sleeping.
- *
- * <p>HTTP client: {@link RestClient} (spring-web, already on the classpath via
- * spring-boot-starter-web/webmvc-test transitively) — resolved fine on Boot 4.1, no JDK HttpClient
- * fallback needed.
- *
- * <p>JSON extraction: {@code com.jayway.jsonpath.JsonPath}, transitive from
- * spring-boot-starter-test — resolved fine, no Jackson ObjectMapper fallback needed.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(ClockTestConfig.class)
 class ApiFluxoIT extends AbstractPostgresIT {
@@ -86,7 +74,6 @@ class ApiFluxoIT extends AbstractPostgresIT {
             .toEntity(String.class);
     assertThat(emAndamento.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
-    // fecha a sessao avancando o relogio (sem sleep)
     clock.avancar(Duration.ofMinutes(2));
 
     var resultado =

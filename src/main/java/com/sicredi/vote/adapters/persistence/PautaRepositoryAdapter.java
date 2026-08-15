@@ -23,9 +23,6 @@ public class PautaRepositoryAdapter implements PautaRepository {
   }
 
   @Override
-  // Invalida a unica chave da lista ('todas') com um DEL direto, e nao allEntries=true. O
-  // clear() do RedisCache (SCAN + DEL) e eventualmente consistente nesta stack: uma leitura
-  // logo apos o salvar ainda enxergaria a lista antiga. O evict por chave e sincrono.
   @CacheEvict(cacheNames = CacheConfig.CACHE_PAUTAS_LISTA, key = "'todas'")
   public Pauta salvar(Pauta pauta) {
     return PautaMapper.toDomain(jpa.save(PautaMapper.toEntity(pauta)));
@@ -40,8 +37,7 @@ public class PautaRepositoryAdapter implements PautaRepository {
   @Override
   @Cacheable(cacheNames = CacheConfig.CACHE_PAUTAS_LISTA, key = "'todas'")
   public List<Pauta> listarTodas() {
-    // ArrayList (mutavel) para round-trip no cache; a lista imutavel de toList() nao e
-    // reconstruivel pelo Jackson ao ler de volta do Redis.
+
     return jpa.findAll().stream()
         .map(PautaMapper::toDomain)
         .collect(Collectors.toCollection(ArrayList::new));

@@ -5,11 +5,13 @@ import com.sicredi.vote.application.exception.SessaoEmAndamentoException;
 import com.sicredi.vote.application.port.out.PautaRepository;
 import com.sicredi.vote.application.port.out.SessaoRepository;
 import com.sicredi.vote.application.port.out.VotoRepository;
+import com.sicredi.vote.config.CacheConfig;
 import com.sicredi.vote.domain.model.OpcaoVoto;
 import com.sicredi.vote.domain.model.ResultadoVotacao;
 import com.sicredi.vote.domain.model.Sessao;
 import java.time.Clock;
 import java.util.UUID;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -28,6 +30,7 @@ public class ConsultarResultado {
     this.clock = clock;
   }
 
+  @Cacheable(cacheNames = CacheConfig.CACHE_RESULTADO, key = "#pautaId")
   public ResultadoVotacao executar(UUID pautaId) {
     if (pautas.buscarPorId(pautaId).isEmpty()) {
       throw new PautaNaoEncontradaException(pautaId);

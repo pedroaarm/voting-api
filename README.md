@@ -10,11 +10,27 @@ Resilience4j · springdoc-openapi · Micrometer/Actuator · Arquitetura Limpa.
 
 ---
 
+## 0. Ressalva técnica
+
+Eu segui exatamente o que foi pedido na documentação, olhando para a necessidade do mobile e fazendo
+o suficiente para que a integração fosse bem-sucedida. Mas, em cenários diferentes, onde não
+tivéssemos essa limitação do mobile, poderíamos pensar em uma arquitetura mais resiliente,
+provavelmente baseada em eventos. Assim, poderíamos ter mais desempenho, confiabilidade e resiliência
+na aplicação, apesar de que, com os testes realizados em ambiente local (ver seções 8 e 11), o
+desempenho já se mostrou aceitável.
+
+Mesmo seguindo com essa arquitetura, em cenários de evolução da solução poderíamos fazer ajustes para
+melhorar o desempenho, como adicionar uma camada de Kubernetes/API Gateway para criar uma base mais
+confiável em cenários de escala horizontal.
+
+---
+
 ## 1. Como executar
 
 Três modos (nenhum exige passo manual de banco):
 
-**a) Docker Compose (app + Postgres + Prometheus + Grafana, um comando)** — production-like local:
+**a) Docker Compose — tudo em container, um comando** — production-like local. A **app roda dentro
+de um container** (build da imagem), junto de Postgres, Redis, Prometheus e Grafana:
 ```bash
 docker compose -f docker-compose.app.yml up --build
 # API:        http://localhost:8090
@@ -25,10 +41,21 @@ docker compose -f docker-compose.app.yml up --build
 > A porta host **8090** foi escolhida para evitar o conflito comum na 8080. Para usar outra,
 > edite `ports: ["8090:8080"]` em `docker-compose.app.yml`. Encerrar: `docker compose -f docker-compose.app.yml down`.
 
-**b) Gradle + Postgres automático** (requer Docker rodando):
+**b) Gradle — app no host + dependências e observabilidade automáticas** (requer Docker rodando):
 ```bash
-./gradlew bootRun          # spring-boot-docker-compose sobe o Postgres; app em http://localhost:8080
+./gradlew bootRun
 ```
+Um único comando: o `spring-boot-docker-compose` sobe **Postgres, Redis, Prometheus e Grafana**
+(via `compose.yaml`) e a **app roda no host** (é o próprio `bootRun`, com hot reload). O Prometheus
+raspa a app do host por `host.docker.internal:8080`:
+```
+# API:        http://localhost:8080
+# Swagger:    http://localhost:8080/swagger-ui.html
+# Prometheus: http://localhost:9090
+# Grafana:    http://localhost:3000  (admin/admin — dashboard "Vote API" + alertas provisionados)
+```
+> Aqui a app **não** é um container: o `bootRun` **é** a aplicação; o `compose.yaml` só provê as
+> dependências. Encerrar as dependências: `docker compose -f compose.yaml down`.
 
 **c) Sem Docker** (H2 em arquivo, fallback):
 ```bash
@@ -178,8 +205,7 @@ Config (`vote.elegibilidade.*`):
 
 `UserInfoClient` usa `RestClient` + **Resilience4j** (circuit breaker + retry) e é **fail-closed**:
 timeout / 5xx / conexão recusada / circuito aberto → `503`. `404` → inelegível (`422`). Retry só
-sobre falha de transporte, nunca sobre um `200`. A chamada é **fora de transação**. Ver
-[ADR 0004](docs/adr/0004-elegibilidade-fail-closed.md).
+sobre falha de transporte, nunca sobre um `200`. A chamada é **fora de transação**.
 
 Para exercitar a integração real:
 ```bash
@@ -192,7 +218,7 @@ Para exercitar a integração real:
 
 | Métrica | Valor |
 |---|---|
-| Testes | **81**, 0 falhas |
+| Testes | **84**, 0 falhas |
 | Cobertura (JaCoCo) | **90% linha / 83% branch** geral; **domínio 100%** |
 | Mutation testing (PIT, pacote de domínio) | **93%** (14 de 15 mutações mortas) |
 | Arquitetura | 5 regras **ArchUnit** (Dependency Rule) |
@@ -202,20 +228,23 @@ Relatórios: `./gradlew test jacocoTestReport` (→ `build/reports/jacoco/`), `.
 (→ `build/reports/pitest/`). Testes de integração usam **Testcontainers** (Postgres real) e a
 integração de CPF é provada com **WireMock**.
 
+![Execução local dos testes com 84 testes passados](assets/readme/qualidade/01-testes-passando.png)
+
 ---
 
 ## 8. Performance (bônus 2)
 
-Script k6 em [`perf/k6-votos.js`](perf/k6-votos.js) para o cenário de 100 mil votos.
+Script k6 em [`perf/k6-votos.js`](perf/k6-votos.js) para o cenário de 400 mil votos.
 
 ```bash
 # pré: crie uma pauta e abra uma sessão com duração longa, pegue o PAUTA_ID
 k6 run -e BASE_URL=http://localhost:8080 -e PAUTA_ID=<uuid> perf/k6-votos.js
 ```
 
-O `p95` sai da execução do script (threshold configurado: `p(95)<500ms`). **Neste entregável o
-número não foi medido** — rode o script no seu ambiente para obtê-lo. A escalabilidade de leitura
-é sustentada pelo índice `(pauta_id, opcao)` usado na apuração (`GROUP BY`).
+O `p95` sai da execução do script (threshold configurado: `p(95)<500ms`). Uma execução local de
+referência, com 100 VUs, 0% de falhas HTTP e p95 de 38,7 ms no registro de voto, está documentada
+na seção 11. A escalabilidade de leitura é sustentada pelo índice `(pauta_id, opcao)` usado na
+apuração (`GROUP BY`).
 
 ---
 
@@ -252,21 +281,57 @@ depreciação é gradual (as telas deixam de apontar para a versão antiga).
 
 ---
 
-## 11. Não implementado / evolução
+## 11. Desempenho e extras
 
-- **Deploy em nuvem gerenciada + URL viva** (o entregável traz Dockerfile + compose local; deploy
-  em AWS foi deliberadamente deixado de fora).
-- **CI (GitHub Actions + JaCoCo no pipeline)** — pronto para adicionar quando houver repositório remoto.
-- **Cache de apuração pós-fechamento** — se o volume de leitura exigir (hoje o `GROUP BY` indexado basta).
-- **Tracing distribuído** (correlation-id já existe; falta propagar via OpenTelemetry).
-- **Paginação** na listagem de pautas (`GET /api/v1/telas/pautas`).
-- **Scrub de URI na causa de exceções** — endurecer o logging para nunca serializar a cadeia de causa.
+Além do fluxo principal de votação, o projeto recebeu uma camada prática de evidências operacionais:
+documentação Swagger para a API de domínio e para as telas server-driven, teste de carga com k6 e
+observabilidade local com Prometheus e Grafana. A intenção foi deixar demonstrável não só que a regra
+de negócio funciona, mas também como o serviço se comporta sob carga e como poderia ser acompanhado
+em produção.
 
----
+### Evidências do entregável
 
-## 12. Decisões (ADRs)
+O material foi organizado para facilitar a avaliação do desafio: código-fonte, Gradle wrapper,
+composes, dashboard, scripts de performance e documentação ficam juntos no pacote de entrega.
 
-- [ADR 0001 — Persistência: Postgres + Flyway](docs/adr/0001-persistencia-postgres-flyway.md)
-- [ADR 0002 — Identidade: associado_id; CPF nunca persistido](docs/adr/0002-identidade-associado-cpf.md)
-- [ADR 0003 — Estado da sessão derivado de timestamp](docs/adr/0003-estado-sessao-timestamp.md)
-- [ADR 0004 — Elegibilidade fail-closed + provider selecionável](docs/adr/0004-elegibilidade-fail-closed.md)
+![Organização dos arquivos do entregável](assets/readme/item-11/01-entregavel-arquivos.png)
+
+### Documentação dos contratos
+
+O Swagger separa os contratos da API de domínio dos endpoints de telas. A API de domínio cobre o
+cadastro de pautas, abertura de sessões, registro de voto e consulta de resultado; já a camada de
+telas expõe o fluxo server-driven que o cliente mobile pode interpretar sem conhecer rotas fixas.
+
+![Swagger com endpoints server-driven de telas](assets/readme/item-11/02-swagger-telas-server-driven.png)
+
+![Swagger com endpoints da API de domínio](assets/readme/item-11/03-swagger-api-dominio.png)
+
+### Teste de carga
+
+A execução local do k6 registrou 400.000 votos com 100 VUs, 100% dos checks concluídos com sucesso,
+0% de falha HTTP e p95 de 38,7 ms para o registro de voto nesta amostra. Isso complementa o script
+[`perf/k6-votos.js`](perf/k6-votos.js) e mostra o comportamento do endpoint crítico sob alta vazão.
+
+![Resultado do teste de carga k6](assets/readme/item-11/04-k6-resultado-carga.png)
+
+### Observabilidade
+
+O dashboard `Vote API` cruza métricas de negócio (`vote.registrados` e `vote.recusados{motivo}`) com
+sinais técnicos de HTTP, JVM, HikariCP, uptime e Resilience4j. Durante a carga, os painéis ajudam a
+acompanhar disponibilidade do target Prometheus, vazão por rota e status, latência média, p95/p99,
+uso de heap, threads, saturação do pool de conexões e estado do circuit breaker de elegibilidade.
+Também deixei seis alertas provisionados como base para operação com on-call em produção: serviço
+fora do ar, taxa de erro 5xx, p95 alto no voto, circuit breaker de elegibilidade aberto, saturação
+do pool HikariCP e uso elevado de heap.
+
+![Grafana com visão inicial do dashboard Vote API](assets/readme/item-11/05-grafana-visao-inicial.png)
+
+![Grafana com métricas de negócio e requisições por rota/status](assets/readme/item-11/06-grafana-metricas-negocio.png)
+
+![Grafana com latência HTTP, JVM heap, threads e uptime](assets/readme/item-11/07-grafana-jvm-latencia-uptime.png)
+
+![Grafana com p95/p99, HikariCP e circuit breaker](assets/readme/item-11/08-grafana-p95-pool-circuit-breaker.png)
+
+![Grafana durante carga com votos, recusas, vazão e latência](assets/readme/item-11/09-grafana-visao-geral-carga.png)
+
+![Grafana com regras de alerta provisionadas](assets/readme/item-11/10-grafana-alert-rules.png)
