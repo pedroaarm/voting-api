@@ -8,11 +8,11 @@ import org.testcontainers.utility.DockerImageName;
 @SpringBootTest
 public abstract class AbstractPostgresIT {
 
-    @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES =
-        new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"));
+  @ServiceConnection
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"));
 
-    static {
-        POSTGRES.start();
-    }
+  static {
+    POSTGRES.start();
+  }
 }
