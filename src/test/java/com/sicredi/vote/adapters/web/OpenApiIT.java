@@ -28,5 +28,8 @@ class OpenApiIT extends AbstractPostgresIT {
     assertThat(json).contains("/api/v1/pautas");
     assertThat(json).contains("/api/v1/pautas/{pautaId}/votos");
     assertThat(json).contains("/api/v1/pautas/{pautaId}/resultado");
+    assertThat(json).contains("Cadastra uma nova pauta");
+    assertThat(json).contains("Registra um voto do associado na pauta");
+    assertThat(json).contains("Consulta o resultado da votacao de uma pauta");
   }
 }
