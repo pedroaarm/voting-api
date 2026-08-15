@@ -31,6 +31,6 @@ class SondaController {
 
   @GetMapping("/sonda/indisp")
   String indisp() {
-    throw new ElegibilidadeIndisponivelException("fora");
+    throw new ElegibilidadeIndisponivelException();
   }
 }

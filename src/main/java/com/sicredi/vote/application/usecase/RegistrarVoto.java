@@ -36,7 +36,7 @@ public class RegistrarVoto {
             .orElseThrow(() -> new SessaoFechadaException(pautaId));
 
     if (elegibilidade.verificar(cpf) == Elegibilidade.UNABLE_TO_VOTE) {
-      throw new AssociadoInelegivelException(cpf);
+      throw new AssociadoInelegivelException();
     }
 
     Voto voto =

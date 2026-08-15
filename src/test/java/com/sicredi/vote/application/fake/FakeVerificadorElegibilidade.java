@@ -10,7 +10,7 @@ public class FakeVerificadorElegibilidade implements VerificadorElegibilidade {
 
   @Override
   public Elegibilidade verificar(String cpf) {
-    if (indisponivel) throw new ElegibilidadeIndisponivelException("serviço fora do ar");
+    if (indisponivel) throw new ElegibilidadeIndisponivelException();
     return resposta;
   }
 }
