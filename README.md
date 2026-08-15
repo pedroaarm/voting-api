@@ -33,13 +33,12 @@ Três modos (nenhum exige passo manual de banco):
 de um container** (build da imagem), junto de Postgres, Redis, Prometheus e Grafana:
 ```bash
 docker compose -f docker-compose.app.yml up --build
-# API:        http://localhost:8090
-# Swagger:    http://localhost:8090/swagger-ui.html
+# API:        http://localhost:8080
+# Swagger:    http://localhost:8080/swagger-ui.html
 # Prometheus: http://localhost:9090
 # Grafana:    http://localhost:3000  (admin/admin)
 ```
-> A porta host **8090** foi escolhida para evitar o conflito comum na 8080. Para usar outra,
-> edite `ports: ["8090:8080"]` em `docker-compose.app.yml`. Encerrar: `docker compose -f docker-compose.app.yml down`.
+> Encerrar: `docker compose -f docker-compose.app.yml down`.
 
 **b) Gradle — app no host + dependências e observabilidade automáticas** (requer Docker rodando):
 ```bash
@@ -252,7 +251,7 @@ apuração (`GROUP BY`).
 
 - **Actuator:** `/actuator/health`, `/actuator/prometheus`, `/actuator/metrics`.
 - **Métricas de negócio:** `vote.registrados` (votos aceitos) e `vote.recusados{motivo}`
-  (`inelegivel` / `indisponivel`).
+  (`duplicado` / `sessao_fechada` / `inelegivel` / `indisponivel`).
 - **Prometheus local:** `http://localhost:9090`, com job `vote-api` coletando
   `http://app:8080/actuator/prometheus` dentro da rede Docker.
 - **Grafana local:** `http://localhost:3000`, login `admin` / `admin`, com datasource Prometheus
@@ -262,7 +261,7 @@ apuração (`GROUP BY`).
 
 O dashboard inicial mostra votos registrados, votos recusados por motivo, requisições HTTP,
 latência HTTP, memória/threads JVM e uptime do processo. As métricas brutas podem ser verificadas
-em `http://localhost:8090/actuator/prometheus`.
+em `http://localhost:8080/actuator/prometheus`.
 
 ---
 

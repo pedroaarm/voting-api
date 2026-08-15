@@ -52,7 +52,12 @@ public class CacheConfig {
 
   private ObjectMapper cacheObjectMapper() {
     PolymorphicTypeValidator ptv =
-        BasicPolymorphicTypeValidator.builder().allowIfSubType(Object.class).build();
+        BasicPolymorphicTypeValidator.builder()
+            .allowIfSubType("com.sicredi.vote.")
+            .allowIfSubType("java.util.")
+            .allowIfSubType("java.time.")
+            .allowIfSubType("java.lang.")
+            .build();
     ObjectMapper mapper =
         JsonMapper.builder()
             .addModule(new JavaTimeModule())

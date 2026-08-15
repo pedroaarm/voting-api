@@ -6,9 +6,9 @@ spring:
       pool-name: vote-hikari
       # Postgres do projeto tem max_connections=100. 30 da folga (3x) para uma instancia e ainda
       # deixa margem para varias replicas. NAO subir cegamente: pool grande demais so enfileira
-      # dentro do Postgres e piora (ver nota no README/§performance). Ajuste medindo hikaricp_*.
-      maximum-pool-size: ${DB_POOL_MAX:500}
-      minimum-idle: ${DB_POOL_MIN_IDLE:50}
+      # dentro do Postgres e piora. Ajuste medindo as metricas hikaricp_* no Grafana.
+      maximum-pool-size: ${DB_POOL_MAX:30}
+      minimum-idle: ${DB_POOL_MIN_IDLE:10}
       connection-timeout: 10000
   jpa:
     hibernate:
