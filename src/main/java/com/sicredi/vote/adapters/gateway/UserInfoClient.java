@@ -53,8 +53,7 @@ public class UserInfoClient implements VerificadorElegibilidade {
       return resiliente.get();
     } catch (CallNotPermittedException e) {
       log.warn("Elegibilidade indisponivel: circuito aberto para o servico userInfo");
-      throw new ElegibilidadeIndisponivelException(
-          "circuito aberto para o servico de elegibilidade", e);
+      throw new ElegibilidadeIndisponivelException(e);
     }
   }
 
@@ -63,8 +62,7 @@ public class UserInfoClient implements VerificadorElegibilidade {
       UserInfoResponse body =
           client.get().uri("/users/{cpf}", cpf).retrieve().body(UserInfoResponse.class);
       if (body == null || body.status() == null) {
-        throw new ElegibilidadeIndisponivelException(
-            "resposta invalida do servico de elegibilidade");
+        throw new ElegibilidadeIndisponivelException();
       }
       return Elegibilidade.valueOf(body.status());
     } catch (HttpClientErrorException.NotFound e) {
@@ -73,8 +71,7 @@ public class UserInfoClient implements VerificadorElegibilidade {
       throw e;
     } catch (Exception e) {
       log.warn("Falha ao consultar o servico de elegibilidade: {}", e.toString());
-      throw new ElegibilidadeIndisponivelException(
-          "falha ao consultar o servico de elegibilidade", e);
+      throw new ElegibilidadeIndisponivelException(e);
     }
   }
 }

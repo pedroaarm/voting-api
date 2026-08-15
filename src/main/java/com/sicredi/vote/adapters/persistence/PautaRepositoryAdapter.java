@@ -23,7 +23,10 @@ public class PautaRepositoryAdapter implements PautaRepository {
   }
 
   @Override
-  @CacheEvict(cacheNames = CacheConfig.CACHE_PAUTAS_LISTA, allEntries = true)
+  // Invalida a unica chave da lista ('todas') com um DEL direto, e nao allEntries=true. O
+  // clear() do RedisCache (SCAN + DEL) e eventualmente consistente nesta stack: uma leitura
+  // logo apos o salvar ainda enxergaria a lista antiga. O evict por chave e sincrono.
+  @CacheEvict(cacheNames = CacheConfig.CACHE_PAUTAS_LISTA, key = "'todas'")
   public Pauta salvar(Pauta pauta) {
     return PautaMapper.toDomain(jpa.save(PautaMapper.toEntity(pauta)));
   }

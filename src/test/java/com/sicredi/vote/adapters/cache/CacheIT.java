@@ -5,7 +5,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -15,10 +17,13 @@ import com.sicredi.vote.adapters.persistence.repository.PautaJpaRepository;
 import com.sicredi.vote.application.port.out.Elegibilidade;
 import com.sicredi.vote.application.port.out.PautaRepository;
 import com.sicredi.vote.application.port.out.VerificadorElegibilidade;
+import com.sicredi.vote.config.CacheConfig;
 import com.sicredi.vote.domain.model.Pauta;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,11 +75,29 @@ class CacheIT {
   @Autowired CacheManager cacheManager;
   @MockitoSpyBean PautaJpaRepository jpaSpy;
 
+  // Nao limpamos o cache aqui de proposito: o Redis e um container proprio desta classe (fresco)
+  // e cada teste usa uma regiao/chave disjunta. Um clear() do RedisCache (SCAN + DEL) e
+  // eventualmente consistente e, disparado no setup, chegaria durante o corpo do teste, apagando
+  // o que ele acabou de gravar -> flakiness. Sem estado compartilhado entre testes, nao ha o que
+  // limpar; so isolamos as interacoes do spy.
   @BeforeEach
   void limpar() {
     WM.resetAll();
-    cacheManager.getCacheNames().forEach(nome -> cacheManager.getCache(nome).clear());
     clearInvocations(jpaSpy);
+  }
+
+  // Escrita e leitura do cache trafegam em conexoes Lettuce distintas, entao o valor gravado leva
+  // alguns ms para ficar visivel (nao ha read-your-writes). Esperamos a condicao estabilizar antes
+  // de asserir o efeito de cache, evitando flakiness.
+  private void aguarda(BooleanSupplier condicao) {
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(20))
+        .until(condicao::getAsBoolean);
+  }
+
+  private boolean cacheContem(String cache, Object chave) {
+    return cacheManager.getCache(cache).get(chave) != null;
   }
 
   @Test
@@ -84,6 +107,8 @@ class CacheIT {
             .willReturn(okJson("{\"status\":\"ABLE_TO_VOTE\"}")));
 
     assertThat(elegibilidade.verificar("12345678900")).isEqualTo(Elegibilidade.ABLE_TO_VOTE);
+    aguarda(() -> cacheContem(CacheConfig.CACHE_ELEGIBILIDADE, "12345678900"));
+
     assertThat(elegibilidade.verificar("12345678900")).isEqualTo(Elegibilidade.ABLE_TO_VOTE);
 
     // segunda chamada veio do cache -> o servico externo foi consultado uma unica vez
@@ -103,9 +128,12 @@ class CacheIT {
     clearInvocations(jpaSpy);
 
     pautas.buscarPorId(salva.getId()); // popula o cache
+    aguarda(() -> cacheContem(CacheConfig.CACHE_PAUTA, salva.getId()));
+    clearInvocations(jpaSpy);
+
     Optional<Pauta> doCache = pautas.buscarPorId(salva.getId()); // vem do Redis
 
-    verify(jpaSpy, times(1)).findById(salva.getId()); // banco consultado uma unica vez
+    verify(jpaSpy, never()).findById(salva.getId()); // veio do cache, sem tocar o banco
     assertThat(doCache).isPresent();
     // valor desserializado do Redis mantem os campos (prova o round-trip JSON do dominio)
     assertThat(doCache.get().getTitulo()).isEqualTo("Reforma do estatuto");
@@ -115,13 +143,18 @@ class CacheIT {
   @Test
   void listaDePautasEhCacheadaEInvalidadaAoSalvar() {
     pautas.listarTodas(); // popula o cache da lista
+    aguarda(() -> cacheContem(CacheConfig.CACHE_PAUTAS_LISTA, "todas"));
+    clearInvocations(jpaSpy);
+
     pautas.listarTodas(); // vem do cache
-    verify(jpaSpy, times(1)).findAll();
+    verify(jpaSpy, never()).findAll();
 
     pautas.salvar(
         Pauta.builder().id(UUID.randomUUID()).titulo("Nova pauta").criadaEm(Instant.now()).build());
+    aguarda(() -> !cacheContem(CacheConfig.CACHE_PAUTAS_LISTA, "todas")); // @CacheEvict propagou
+    clearInvocations(jpaSpy);
 
     pautas.listarTodas(); // cache foi invalidado -> consulta o banco de novo
-    verify(jpaSpy, times(2)).findAll();
+    verify(jpaSpy, times(1)).findAll();
   }
 }

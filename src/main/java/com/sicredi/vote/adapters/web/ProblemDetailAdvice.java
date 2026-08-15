@@ -6,12 +6,18 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class ProblemDetailAdvice {
+
+  private static final String VALIDACAO_SLUG = "validacao";
+  private static final String VALIDACAO_TITLE_KEY = "problem.validacao.title";
+  private static final String VALIDACAO_DETAIL_KEY = "problem.validacao.detail";
 
   private final MessageSource messages;
   private final VoteMetrics metrics;
@@ -21,11 +27,22 @@ public class ProblemDetailAdvice {
     this.metrics = metrics;
   }
 
-  private ProblemDetail problem(HttpStatus status, String slug) {
-    String title =
-        messages.getMessage("problem." + slug + ".title", null, LocaleContextHolder.getLocale());
-    String detail =
-        messages.getMessage("problem." + slug + ".detail", null, LocaleContextHolder.getLocale());
+  private ProblemDetail problem(HttpStatus status, AplicacaoException exception) {
+    return problem(status, exception.tipoProblema());
+  }
+
+  private ProblemDetail problem(HttpStatus status, TipoProblema tipoProblema) {
+    return problem(status, tipoProblema.slug(), tipoProblema.titleKey(), tipoProblema.detailKey());
+  }
+
+  private ProblemDetail validacaoProblem(HttpStatus status) {
+    return problem(status, VALIDACAO_SLUG, VALIDACAO_TITLE_KEY, VALIDACAO_DETAIL_KEY);
+  }
+
+  private ProblemDetail problem(HttpStatus status, String slug, String titleKey, String detailKey) {
+    var locale = LocaleContextHolder.getLocale();
+    String title = messages.getMessage(titleKey, null, locale);
+    String detail = messages.getMessage(detailKey, null, locale);
     ProblemDetail pd = ProblemDetail.forStatusAndDetail(status, detail);
     pd.setType(URI.create("urn:vote:" + slug));
     pd.setTitle(title);
@@ -34,44 +51,44 @@ public class ProblemDetailAdvice {
 
   @ExceptionHandler(PautaNaoEncontradaException.class)
   ProblemDetail handle(PautaNaoEncontradaException e) {
-    return problem(HttpStatus.NOT_FOUND, "pauta-nao-encontrada");
+    return problem(HttpStatus.NOT_FOUND, e);
   }
 
   @ExceptionHandler(SessaoJaAbertaException.class)
   ProblemDetail handle(SessaoJaAbertaException e) {
-    return problem(HttpStatus.CONFLICT, "sessao-ja-aberta");
+    return problem(HttpStatus.CONFLICT, e);
   }
 
   @ExceptionHandler(VotoDuplicadoException.class)
   ProblemDetail handle(VotoDuplicadoException e) {
-    return problem(HttpStatus.CONFLICT, "voto-duplicado");
+    return problem(HttpStatus.CONFLICT, e);
   }
 
   @ExceptionHandler(SessaoFechadaException.class)
   ProblemDetail handle(SessaoFechadaException e) {
-    return problem(HttpStatus.UNPROCESSABLE_ENTITY, "sessao-fechada");
+    return problem(HttpStatus.UNPROCESSABLE_ENTITY, e);
   }
 
   @ExceptionHandler(SessaoEmAndamentoException.class)
   ProblemDetail handle(SessaoEmAndamentoException e) {
-    return problem(HttpStatus.CONFLICT, "sessao-em-andamento");
+    return problem(HttpStatus.CONFLICT, e);
   }
 
   @ExceptionHandler(AssociadoInelegivelException.class)
   ProblemDetail handle(AssociadoInelegivelException e) {
     metrics.votoRecusado("inelegivel");
-    return problem(HttpStatus.UNPROCESSABLE_ENTITY, "associado-inelegivel");
+    return problem(HttpStatus.UNPROCESSABLE_ENTITY, e);
   }
 
   @ExceptionHandler(ElegibilidadeIndisponivelException.class)
   ProblemDetail handle(ElegibilidadeIndisponivelException e) {
     metrics.votoRecusado("indisponivel");
-    return problem(HttpStatus.SERVICE_UNAVAILABLE, "elegibilidade-indisponivel");
+    return problem(HttpStatus.SERVICE_UNAVAILABLE, e);
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
   ProblemDetail handle(MethodArgumentNotValidException e) {
-    ProblemDetail pd = problem(HttpStatus.BAD_REQUEST, "validacao");
+    ProblemDetail pd = validacaoProblem(HttpStatus.BAD_REQUEST);
     var erros =
         e.getBindingResult().getFieldErrors().stream()
             .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
@@ -80,16 +97,13 @@ public class ProblemDetailAdvice {
     return pd;
   }
 
-  @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
-  ProblemDetail handleUnreadable(
-      org.springframework.http.converter.HttpMessageNotReadableException e) {
-    return problem(org.springframework.http.HttpStatus.BAD_REQUEST, "validacao");
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  ProblemDetail handleUnreadable(HttpMessageNotReadableException e) {
+    return validacaoProblem(HttpStatus.BAD_REQUEST);
   }
 
-  @ExceptionHandler(
-      org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
-  ProblemDetail handleTypeMismatch(
-      org.springframework.web.method.annotation.MethodArgumentTypeMismatchException e) {
-    return problem(org.springframework.http.HttpStatus.BAD_REQUEST, "validacao");
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+    return validacaoProblem(HttpStatus.BAD_REQUEST);
   }
 }

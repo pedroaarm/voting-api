@@ -8,7 +8,7 @@ import { check } from 'k6';
 //   2) POST /api/v1/pautas/{id}/sessoes  {"duracaoMinutos": 30}
 //
 // Execução:
-//   k6 run -e BASE_URL=http://localhost:8080 -e PAUTA_ID=302978b4-f9c7-4c6f-a2e8-a6c938b22a9e perf/k6-votos.js
+//   k6 run -e BASE_URL=http://localhost:8080 -e PAUTA_ID=bc4b66c3-ea08-451f-9e5a-2626971e9102 perf/k6-votos.js
 //
 // O número de p95 (abaixo em thresholds) é OBTIDO ao rodar este script; não vem medido
 // neste entregável. Ajuste vus/iterations conforme a máquina.
