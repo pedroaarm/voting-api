@@ -2,10 +2,12 @@ package com.sicredi.vote.adapters.persistence;
 
 import com.sicredi.vote.adapters.persistence.mapper.SessaoMapper;
 import com.sicredi.vote.adapters.persistence.repository.SessaoJpaRepository;
+import com.sicredi.vote.application.exception.SessaoJaAbertaException;
 import com.sicredi.vote.application.port.out.SessaoRepository;
 import com.sicredi.vote.domain.model.Sessao;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -20,8 +22,8 @@ public class SessaoRepositoryAdapter implements SessaoRepository {
   public Sessao salvar(Sessao sessao) {
     try {
       return SessaoMapper.toDomain(jpa.saveAndFlush(SessaoMapper.toEntity(sessao)));
-    } catch (org.springframework.dao.DataIntegrityViolationException e) {
-      throw new com.sicredi.vote.application.exception.SessaoJaAbertaException(sessao.getPautaId());
+    } catch (DataIntegrityViolationException e) {
+      throw new SessaoJaAbertaException(sessao.getPautaId());
     }
   }
 

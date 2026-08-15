@@ -4,6 +4,7 @@ import com.sicredi.vote.adapters.persistence.mapper.PautaMapper;
 import com.sicredi.vote.adapters.persistence.repository.PautaJpaRepository;
 import com.sicredi.vote.application.port.out.PautaRepository;
 import com.sicredi.vote.domain.model.Pauta;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
@@ -27,9 +28,7 @@ public class PautaRepositoryAdapter implements PautaRepository {
   }
 
   @Override
-  public java.util.List<com.sicredi.vote.domain.model.Pauta> listarTodas() {
-    return jpa.findAll().stream()
-        .map(com.sicredi.vote.adapters.persistence.mapper.PautaMapper::toDomain)
-        .toList();
+  public List<Pauta> listarTodas() {
+    return jpa.findAll().stream().map(PautaMapper::toDomain).toList();
   }
 }

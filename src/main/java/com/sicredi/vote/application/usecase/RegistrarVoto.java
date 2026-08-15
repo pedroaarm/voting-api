@@ -29,19 +29,16 @@ public class RegistrarVoto {
   }
 
   public Voto executar(UUID pautaId, String associadoId, String cpf, OpcaoVoto opcao) {
-    // 1) janela da sessão — fora de transação
     Sessao sessao =
         sessoes
             .buscarPorPauta(pautaId)
             .filter(s -> s.estaAberta(clock.instant()))
             .orElseThrow(() -> new SessaoFechadaException(pautaId));
 
-    // 2) elegibilidade — chamada externa FORA da transação (Plano 3 troca a impl)
     if (elegibilidade.verificar(cpf) == Elegibilidade.UNABLE_TO_VOTE) {
       throw new AssociadoInelegivelException(cpf);
     }
 
-    // 3) persistência — unicidade garante 1 voto por associado/pauta
     Voto voto =
         Voto.builder()
             .id(UUID.randomUUID())
